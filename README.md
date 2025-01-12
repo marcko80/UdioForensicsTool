@@ -117,8 +117,8 @@ Contributi e suggerimenti sono benvenuti! Se desideri contribuire al progetto, s
 ## Contatti
 
 Per domande o feedback, contattami tramite:
-- **Email**: [tua-email@example.com](mailto:tua-email@example.com)
-- **GitHub**: [@tuo-username](https://github.com/tuo-username)
+- **Email**: 
+- **GitHub**: 
 
 ---
 
