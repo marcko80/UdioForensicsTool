@@ -1,9 +1,4 @@
 # UdioForensicsTool
-Ecco una descrizione completa del progetto **Udio Forensics Tool** che puoi utilizzare per la pagina del repository su GitHub:
-
----
-
-# Udio Forensics Tool
 
 **Udio Forensics Tool** è un software avanzato per l'analisi forense di file audio, progettato per identificare manipolazioni, tagli o alterazioni nei registrati. Questo strumento è ideale per investigatori, esperti forensi, giornalisti e chiunque abbia bisogno di analizzare file audio per scoprire eventuali manomissioni.
 
