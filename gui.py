@@ -124,11 +124,19 @@ class MainWindow(QMainWindow):
             spectral_analysis.plot_spectrum(self.audio_file, self.spectrum_path)
 
             logging.info("Rilevamento delle manipolazioni nel file audio.")
-            tampering_results = detect_tampering(self.audio_file)
+            tampering_results, discontinuita_path = detect_tampering(self.audio_file)  # Ottieni il percorso del grafico
 
             logging.info("Generazione del report PDF.")
             report_path = os.path.join(os.path.dirname(self.audio_file), 'audio_analysis_report.pdf')
-            report_generator.generate_report(self.audio_file, self.info, self.anomalies, tampering_results, report_path, self.spectrum_path)
+            report_generator.generate_report(
+                self.audio_file, 
+                self.info, 
+                self.anomalies, 
+                tampering_results, 
+                report_path, 
+                self.spectrum_path,
+                discontinuita_path  # Passa il percorso del grafico delle discontinuità
+            )
 
             logging.info("Visualizzazione dei risultati.")
             self.text_info.setText(f'Informazioni:\n{self.info}\nAnomalie:\n{self.anomalies}\nManipolazioni rilevate:\n{tampering_results}')

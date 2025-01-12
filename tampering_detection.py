@@ -1,6 +1,7 @@
 import numpy as np
 import librosa
 import matplotlib.pyplot as plt
+import os
 
 def detect_tampering(audio_path, frame_length=2048, hop_length=512, threshold=0.1):
     """
@@ -29,7 +30,10 @@ def detect_tampering(audio_path, frame_length=2048, hop_length=512, threshold=0.
         # Converti i frame in timestamp
         timestamps = librosa.frames_to_time(anomalies, sr=sr, hop_length=hop_length)
 
-        # Visualizza i risultati
+        # Salva il grafico delle discontinuità in un file immagine
+        output_dir = os.path.dirname(audio_path)
+        discontinuita_path = os.path.join(output_dir, 'discontinuita.png')
+        
         plt.figure(figsize=(10, 4))
         plt.plot(librosa.frames_to_time(np.arange(len(diff_norm)), sr=sr, hop_length=hop_length), diff_norm)
         plt.axhline(y=threshold, color='r', linestyle='--', label='Soglia')
@@ -37,9 +41,10 @@ def detect_tampering(audio_path, frame_length=2048, hop_length=512, threshold=0.
         plt.xlabel("Tempo (s)")
         plt.ylabel("Differenza Norm")
         plt.legend()
-        plt.show()
+        plt.savefig(discontinuita_path)
+        plt.close()
 
-        return timestamps
+        return timestamps, discontinuita_path  # Restituisce i timestamp e il percorso del grafico
 
     except Exception as e:
         raise Exception(f"Errore durante il rilevamento delle manipolazioni: {str(e)}")
