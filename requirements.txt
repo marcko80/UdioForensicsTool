@@ -1,0 +1,7 @@
+pydub
+scipy
+numpy
+matplotlib
+soundfile
+reportlab
+PyQt5
