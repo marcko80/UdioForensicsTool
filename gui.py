@@ -1,5 +1,6 @@
 import sys
 import os
+import logging
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QFileDialog, QLabel, QVBoxLayout, QWidget, QProgressBar, QHBoxLayout, QMessageBox, QTextEdit
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
@@ -7,6 +8,7 @@ import audio_handler
 import spectral_analysis
 import anomaly_detection
 import report_generator
+from tampering_detection import detect_tampering
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -35,9 +37,9 @@ class MainWindow(QMainWindow):
         self.label_file.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.label_file)
 
-        # Pulsante per avviare l'analisi
-        self.btn_analyze = QPushButton('Analizza', self)
-        self.btn_analyze.clicked.connect(self.analyze_audio)
+        # Pulsante per avviare l'analisi completa
+        self.btn_analyze = QPushButton('Analizza e Rileva Manipolazioni', self)
+        self.btn_analyze.clicked.connect(self.start_analysis)
         self.btn_analyze.setEnabled(False)  # Disabilitato fino al caricamento del file
         self.layout.addWidget(self.btn_analyze)
 
@@ -65,29 +67,30 @@ class MainWindow(QMainWindow):
         """
         Carica un file audio.
         """
+        logging.info("Avvio del caricamento del file audio.")
         options = QFileDialog.Options()
         self.audio_file, _ = QFileDialog.getOpenFileName(self, "Seleziona File Audio", "", "Audio Files (*.wav *.mp3 *.aac *.ogg *.flac *.m4a *.3gpp)", options=options)
         if self.audio_file:
+            logging.info(f"File audio caricato: {self.audio_file}")
             self.label_file.setText(f'File caricato: {self.audio_file}')
             self.btn_analyze.setEnabled(True)  # Abilita il pulsante di analisi
+        else:
+            logging.warning("Nessun file audio selezionato.")
 
-    def analyze_audio(self):
+    def start_analysis(self):
         """
-        Avvia l'analisi del file audio.
+        Avvia l'analisi completa del file audio.
         """
         if not hasattr(self, 'audio_file'):
+            logging.error("Nessun file audio caricato.")
             QMessageBox.warning(self, 'Errore', 'Nessun file audio caricato!')
             return
 
-        # Disabilita i pulsanti durante l'analisi
+        logging.info("Avvio dell'analisi completa del file audio.")
         self.btn_load.setEnabled(False)
         self.btn_analyze.setEnabled(False)
-
-        # Mostra la barra di progressione
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
-
-        # Simula l'avanzamento dell'analisi
         self.timer.start(100)  # Aggiorna la barra ogni 100 ms
 
     def update_progress(self):
@@ -103,48 +106,53 @@ class MainWindow(QMainWindow):
 
     def perform_analysis(self):
         """
-        Esegue l'analisi del file audio e visualizza i risultati.
+        Esegue l'analisi completa del file audio.
         """
         try:
-            # Estrazione delle informazioni tecniche
-            info = audio_handler.get_audio_info(self.audio_file)
-            if not info:
+            logging.info("Estrazione delle informazioni tecniche del file audio.")
+            self.info = audio_handler.get_audio_info(self.audio_file)
+            if not self.info:
                 raise Exception("Errore durante l'estrazione delle informazioni.")
 
-            # Rilevamento delle anomalie
-            anomalies = anomaly_detection.detect_anomalies(self.audio_file)
-            if not anomalies:
+            logging.info("Rilevamento delle anomalie nel file audio.")
+            self.anomalies = anomaly_detection.detect_anomalies(self.audio_file)
+            if not self.anomalies:
                 raise Exception("Errore durante il rilevamento delle anomalie.")
 
-            # Analisi spettrale
-            spectrum_path = os.path.join(os.path.dirname(self.audio_file), 'spectrum.png')
-            spectral_analysis.plot_spectrum(self.audio_file, spectrum_path)
+            logging.info("Generazione dello spettrogramma.")
+            self.spectrum_path = os.path.join(os.path.dirname(self.audio_file), 'spectrum.png')
+            spectral_analysis.plot_spectrum(self.audio_file, self.spectrum_path)
 
-            # Generazione del report
+            logging.info("Rilevamento delle manipolazioni nel file audio.")
+            tampering_results = detect_tampering(self.audio_file)
+
+            logging.info("Generazione del report PDF.")
             report_path = os.path.join(os.path.dirname(self.audio_file), 'audio_analysis_report.pdf')
-            report_generator.generate_report(self.audio_file, info, anomalies, report_path, spectrum_path)
+            report_generator.generate_report(self.audio_file, self.info, self.anomalies, tampering_results, report_path, self.spectrum_path)
 
-            # Visualizzazione dei risultati
-            self.text_info.setText(f'Informazioni:\n{info}\nAnomalie:\n{anomalies}')
-            pixmap = QPixmap(spectrum_path)
+            logging.info("Visualizzazione dei risultati.")
+            self.text_info.setText(f'Informazioni:\n{self.info}\nAnomalie:\n{self.anomalies}\nManipolazioni rilevate:\n{tampering_results}')
+            pixmap = QPixmap(self.spectrum_path)
             self.label_spectrum.setPixmap(pixmap.scaled(600, 400))
 
-            # Ripristina i pulsanti
             self.btn_load.setEnabled(True)
             self.btn_analyze.setEnabled(True)
-
-            # Nasconde la barra di progressione
             self.progress_bar.setVisible(False)
 
+            logging.info("Analisi completata con successo.")
             QMessageBox.information(self, 'Completato', f'Analisi completata con successo!\nReport salvato in: {report_path}')
         except Exception as e:
-            QMessageBox.critical(self, 'Errore', f"Si è verificato un errore durante l'analisi: {e}")
+            logging.error(f"Errore durante l'analisi: {e}", exc_info=True)
+            QMessageBox.critical(self, 'Errore', f"Si è verificato un errore durante l'analisi: {str(e)}")
             self.btn_load.setEnabled(True)
             self.btn_analyze.setEnabled(True)
             self.progress_bar.setVisible(False)
 
-if __name__ == '__main__':
+def main():
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()
